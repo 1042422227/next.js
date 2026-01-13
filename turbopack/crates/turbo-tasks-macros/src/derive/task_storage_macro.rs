@@ -59,6 +59,10 @@ struct FieldInfo {
     /// If true, use Default::default() semantics instead of Option for inline direct fields.
     /// The field type should be T (not Option<T>), and empty is represented by T::default().
     use_default: bool,
+    /// If true, this field uses custom serialization via
+    /// encode_custom_fields/decode_custom_data_fields. Fields with custom_serialization are
+    /// skipped during normal encode/decode and handled separately.
+    custom_serialization: bool,
 }
 
 impl FieldInfo {
@@ -312,7 +316,7 @@ enum StorageType {
     Flag,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Category {
     Data,
     Meta,
@@ -349,6 +353,7 @@ fn parse_field_storage_attributes(field: &syn::Field) -> FieldInfo {
     let mut inline = false; // Default is lazy (not inline)
     let mut filter_transient = false;
     let mut use_default = false;
+    let mut custom_serialization = false;
 
     // Find and parse the field attribute
     if let Some(attr) = field.attrs.iter().find(|attr| {
@@ -446,12 +451,13 @@ fn parse_field_storage_attributes(field: &syn::Field) -> FieldInfo {
                         "inline" => inline = true,
                         "filter_transient" => filter_transient = true,
                         "default" => use_default = true,
+                        "custom_serialization" => custom_serialization = true,
                         other => {
                             meta.span()
                                 .unwrap()
                                 .error(format!(
                                     "unknown modifier `{other}`, expected `inline`, \
-                                     `filter_transient`, or `default`"
+                                     `filter_transient`, `default`, or `custom_serialization`"
                                 ))
                                 .emit();
                         }
@@ -526,6 +532,7 @@ fn parse_field_storage_attributes(field: &syn::Field) -> FieldInfo {
         lazy: !inline, // Default is lazy; inline = true means lazy = false
         filter_transient,
         use_default,
+        custom_serialization,
     }
 }
 
@@ -604,16 +611,24 @@ impl GroupedFields {
 
     /// Returns an iterator over persistent (non-transient) inline fields for a category.
     fn persistent_inline(&self, category: Category) -> impl Iterator<Item = &FieldInfo> {
-        self.fields
-            .iter()
-            .filter(move |f| !f.is_flag() && !f.lazy && !f.is_transient() && f.category == category)
+        self.fields.iter().filter(move |f| {
+            !f.is_flag()
+                && !f.lazy
+                && !f.is_transient()
+                && f.category == category
+                && !f.custom_serialization
+        })
     }
 
     /// Returns an iterator over persistent (non-transient) lazy fields for a category.
     fn persistent_lazy(&self, category: Category) -> impl Iterator<Item = &FieldInfo> {
-        self.fields
-            .iter()
-            .filter(move |f| !f.is_flag() && f.lazy && !f.is_transient() && f.category == category)
+        self.fields.iter().filter(move |f| {
+            !f.is_flag()
+                && f.lazy
+                && !f.is_transient()
+                && f.category == category
+                && !f.custom_serialization
+        })
     }
 }
 
@@ -2077,22 +2092,28 @@ fn generate_flag_trait_accessor_methods(field: &FieldInfo) -> TokenStream {
 /// Generate encode body for a category (inline fields + lazy fields).
 fn gen_encode_body(grouped_fields: &GroupedFields, category: Category) -> TokenStream {
     let inline: Vec<_> = grouped_fields
-        .persistent_inline(category.clone())
+        .persistent_inline(category)
         .map(generate_encode_inline_field)
         .collect();
     let lazy: Vec<_> = grouped_fields.persistent_lazy(category).collect();
     let lazy_encode = generate_encode_lazy_fields(&lazy);
+    let custom = match category {
+        Category::Data => quote! { self.encode_custom_data_fields(encoder)?;},
+        Category::Meta => quote! { self.encode_custom_meta_fields(encoder)?;},
+        Category::Transient => unreachable!(),
+    };
 
     quote! {
         #(#inline)*
         #lazy_encode
+        #custom
     }
 }
 
 /// Generate decode body for a category (inline fields + lazy fields).
 fn gen_decode_body(grouped_fields: &GroupedFields, category: Category) -> TokenStream {
     let inline: Vec<_> = grouped_fields
-        .persistent_inline(category.clone())
+        .persistent_inline(category)
         .map(|field| {
             let field_name = &field.field_name;
             quote! {
@@ -2102,10 +2123,15 @@ fn gen_decode_body(grouped_fields: &GroupedFields, category: Category) -> TokenS
         .collect();
     let lazy: Vec<_> = grouped_fields.persistent_lazy(category).collect();
     let lazy_decode = generate_decode_lazy_fields(&lazy);
-
+    let custom = match category {
+        Category::Data => quote! { self.decode_custom_data_fields(decoder)?;},
+        Category::Meta => quote! { self.decode_custom_meta_fields(decoder)?;},
+        Category::Transient => unreachable!(),
+    };
     quote! {
         #(#inline)*
         #lazy_decode
+        #custom
     }
 }
 
@@ -2118,7 +2144,9 @@ fn gen_decode_body(grouped_fields: &GroupedFields, category: Category) -> TokenS
 /// - `decode_data<D>(&mut self, decoder: &mut D)` - Decode data category fields
 ///
 /// Only persistent (non-transient) fields are encoded/decoded.
-fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> TokenStream {
+fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> proc_macro2::TokenStream {
+    // Collect persistent fields by category using helpers
+
     let has_flags = grouped_fields.persisted_flags().next().is_some();
 
     let encode_meta_body = gen_encode_body(grouped_fields, Category::Meta);
@@ -2126,7 +2154,7 @@ fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> TokenStream
     let decode_meta_body = gen_decode_body(grouped_fields, Category::Meta);
     let decode_data_body = gen_decode_body(grouped_fields, Category::Data);
 
-    let encode_flags = if has_flags {
+    let encode_meta_flags = if has_flags {
         quote! {
             // Encode only the persisted flag bits
             let persisted_flags = self.flags.persisted_bits();
@@ -2136,7 +2164,7 @@ fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> TokenStream
         quote! {}
     };
 
-    let decode_flags = if has_flags {
+    let decode_meta_flags = if has_flags {
         quote! {
             // Decode only the persisted flag bits, preserving transient bits
             let persisted_flags: u16 = bincode::Decode::decode(decoder)?;
@@ -2151,20 +2179,21 @@ fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> TokenStream
         impl TaskStorage {
             /// Encode meta category fields directly to bincode.
             /// Only persistent (non-transient) fields are encoded.
-            pub fn encode_meta<E: bincode::enc::Encoder>(
+            pub fn encode_meta(
                 &self,
-                encoder: &mut E,
+                encoder: &mut turbo_bincode::TurboBincodeEncoder<'_>,
             ) -> Result<(), bincode::error::EncodeError> {
                 #encode_meta_body
-                #encode_flags
+                #encode_meta_flags
                 Ok(())
             }
 
             /// Encode data category fields directly to bincode.
             /// Only persistent (non-transient) fields are encoded.
-            pub fn encode_data<E: bincode::enc::Encoder>(
+            /// Fields with custom_serialization are handled via encode_custom_fields.
+            pub fn encode_data(
                 &self,
-                encoder: &mut E,
+                encoder: &mut turbo_bincode::TurboBincodeEncoder<'_>,
             ) -> Result<(), bincode::error::EncodeError> {
                 #encode_data_body
                 Ok(())
@@ -2172,22 +2201,24 @@ fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> TokenStream
 
             /// Decode meta category fields from bincode.
             /// Only persistent (non-transient) fields are decoded.
-            pub fn decode_meta<D: bincode::de::Decoder>(
+            pub fn decode_meta(
                 &mut self,
-                decoder: &mut D,
+                decoder: &mut turbo_bincode::TurboBincodeDecoder<'_>,
             ) -> Result<(), bincode::error::DecodeError> {
                 #decode_meta_body
-                #decode_flags
+                #decode_meta_flags
                 Ok(())
             }
 
             /// Decode data category fields from bincode.
             /// Only persistent (non-transient) fields are decoded.
-            pub fn decode_data<D: bincode::de::Decoder>(
+            /// Fields with custom_serialization are handled via decode_custom_data_fields.
+            pub fn decode_data(
                 &mut self,
-                decoder: &mut D,
+                decoder: &mut turbo_bincode::TurboBincodeDecoder<'_>,
             ) -> Result<(), bincode::error::DecodeError> {
                 #decode_data_body
+
                 Ok(())
             }
         }
