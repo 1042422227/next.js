@@ -2190,7 +2190,7 @@ fn generate_encode_decode_methods(grouped_fields: &GroupedFields) -> proc_macro2
 
             /// Encode data category fields directly to bincode.
             /// Only persistent (non-transient) fields are encoded.
-            /// Fields with custom_serialization are handled via encode_custom_fields.
+            /// Fields with custom_serialization are handled via encode_custom_data_fields.
             pub fn encode_data(
                 &self,
                 encoder: &mut turbo_bincode::TurboBincodeEncoder<'_>,
