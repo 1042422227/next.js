@@ -329,11 +329,9 @@ function getWorkerURL(
   const url = new URL(getChunkRelativeUrl(entrypoint), location.origin)
 
   const params = {
-    globals: {
-      S: CHUNK_SUFFIX,
-      N: (globalThis as any).NEXT_DEPLOYMENT_ID,
-      NC: moduleChunks.map((chunk) => getChunkRelativeUrl(chunk)),
-    },
+    S: CHUNK_SUFFIX,
+    N: (globalThis as any).NEXT_DEPLOYMENT_ID,
+    NC: moduleChunks.map((chunk) => getChunkRelativeUrl(chunk)).reverse(),
   }
 
   const paramsJson = JSON.stringify(params)

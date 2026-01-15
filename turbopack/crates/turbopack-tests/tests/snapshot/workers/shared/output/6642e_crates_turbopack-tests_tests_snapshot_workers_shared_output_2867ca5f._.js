@@ -10,9 +10,9 @@
     }
     if (!paramsString) return;
     const config = JSON.parse(paramsString);
-    const TURBOPACK_CHUNK_SUFFIX = config.globals.S ?? '';
-    const NEXT_DEPLOYMENT_ID = config.globals.N;
-    const TURBOPACK_NEXT_CHUNK_URLS = config.globals.NC ?? [];
+    const TURBOPACK_CHUNK_SUFFIX = config.S ?? '';
+    const NEXT_DEPLOYMENT_ID = config.N;
+    const TURBOPACK_NEXT_CHUNK_URLS = config.NC ?? [];
     Object.assign(self, {
         TURBOPACK_CHUNK_SUFFIX,
         TURBOPACK_NEXT_CHUNK_URLS,

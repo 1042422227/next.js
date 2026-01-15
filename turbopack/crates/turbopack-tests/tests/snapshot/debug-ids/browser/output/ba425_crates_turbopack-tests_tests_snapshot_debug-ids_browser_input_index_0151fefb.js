@@ -1,4 +1,4 @@
-;!function(){try { var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof global?global:"undefined"!=typeof window?window:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&((e._debugIds|| (e._debugIds={}))[n]="433e9513-5651-9f19-b240-db714b5004fe")}catch(e){}}();
+;!function(){try { var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof global?global:"undefined"!=typeof window?window:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&((e._debugIds|| (e._debugIds={}))[n]="64dbc9d9-e5e6-be86-eb2e-fccacc8012b2")}catch(e){}}();
 (globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([
     "output/ba425_crates_turbopack-tests_tests_snapshot_debug-ids_browser_input_index_0151fefb.js",
     {"otherChunks":["output/aaf3a_crates_turbopack-tests_tests_snapshot_debug-ids_browser_input_index_0b8736b3.js"],"runtimeModuleIds":["[project]/turbopack/crates/turbopack-tests/tests/snapshot/debug-ids/browser/input/index.js [test] (ecmascript)"]}
@@ -694,11 +694,9 @@ browserContextPrototype.P = resolveAbsolutePath;
  */ function getWorkerURL(entrypoint, moduleChunks, shared) {
     const url = new URL(getChunkRelativeUrl(entrypoint), location.origin);
     const params = {
-        globals: {
-            S: CHUNK_SUFFIX,
-            N: globalThis.NEXT_DEPLOYMENT_ID,
-            NC: moduleChunks.map((chunk)=>getChunkRelativeUrl(chunk))
-        }
+        S: CHUNK_SUFFIX,
+        N: globalThis.NEXT_DEPLOYMENT_ID,
+        NC: moduleChunks.map((chunk)=>getChunkRelativeUrl(chunk)).reverse()
     };
     const paramsJson = JSON.stringify(params);
     if (shared) {
@@ -1869,5 +1867,5 @@ chunkListsToRegister.forEach(registerChunkList);
 })();
 
 
-//# debugId=433e9513-5651-9f19-b240-db714b5004fe
+//# debugId=64dbc9d9-e5e6-be86-eb2e-fccacc8012b2
 //# sourceMappingURL=aaf3a_crates_turbopack-tests_tests_snapshot_debug-ids_browser_input_index_0151fefb.js.map
