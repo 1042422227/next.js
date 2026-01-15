@@ -165,6 +165,9 @@ export function getDefineEnv({
     'process.env.__NEXT_CACHE_COMPONENTS': isCacheComponentsEnabled,
     'process.env.__NEXT_USE_CACHE': isUseCacheEnabled,
 
+    'process.env.NEXT_ASSET_DEPLOYMENT_ID':
+      config.experimental.immutableDeploymentId || false,
+
     ...(isClient
       ? {
           // TODO use `globalThis.NEXT_DEPLOYMENT_ID` on client to still support accessing
