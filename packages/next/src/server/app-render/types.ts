@@ -122,7 +122,7 @@ export interface RenderOptsPartial {
   nextConfigOutput?: 'standalone' | 'export'
   onInstrumentationRequestError?: ServerOnInstrumentationRequestError
   isDraftMode?: boolean
-  deploymentId?: string
+  immutableDeploymentId?: string
   onUpdateCookies?: (cookies: string[]) => void
   loadConfig?: (
     phase: string,

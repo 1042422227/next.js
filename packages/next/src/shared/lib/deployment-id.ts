@@ -4,10 +4,14 @@ export function getDeploymentId(): string | undefined {
   return process.env.NEXT_DEPLOYMENT_ID
 }
 
-export function getDeploymentIdQueryOrEmptyString(): string {
-  let deploymentId = getDeploymentId()
+export function getimmutableDeploymentId(): string | undefined {
+  return process.env.NEXT_ASSET_DEPLOYMENT_ID || process.env.NEXT_DEPLOYMENT_ID
+}
+
+export function getimmutableDeploymentIdQuery(amperstand = false): string {
+  let deploymentId = getimmutableDeploymentId()
   if (deploymentId) {
-    return `?dpl=${deploymentId}`
+    return `${amperstand ? '&' : '?'}dpl=${deploymentId}`
   }
   return ''
 }

@@ -19,7 +19,7 @@ import { getProxiedPluginState } from '../../build-context'
 import { WEBPACK_LAYERS } from '../../../lib/constants'
 import { normalizePagePath } from '../../../shared/lib/page-path/normalize-page-path'
 import { CLIENT_STATIC_FILES_RUNTIME_MAIN_APP } from '../../../shared/lib/constants'
-import { getDeploymentIdQueryOrEmptyString } from '../../../shared/lib/deployment-id'
+import { getimmutableDeploymentIdQuery } from '../../../shared/lib/deployment-id'
 import {
   formatBarrelOptimizedResource,
   getModuleReferencesInOrder,
@@ -119,7 +119,7 @@ function getAppPathRequiredChunks(
   chunkGroup: webpack.ChunkGroup,
   excludedFiles: Set<string>
 ) {
-  const deploymentIdChunkQuery = getDeploymentIdQueryOrEmptyString()
+  const deploymentIdChunkQuery = getimmutableDeploymentIdQuery()
 
   const chunks: Array<string> = []
   chunkGroup.chunks.forEach((chunk) => {

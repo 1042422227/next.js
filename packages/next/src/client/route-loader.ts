@@ -4,7 +4,7 @@ import type { RequiredServerFilesManifest } from '../build'
 import getAssetPathFromRoute from '../shared/lib/router/utils/get-asset-path-from-route'
 import { __unsafeCreateTrustedScriptURL } from './trusted-types'
 import { requestIdleCallback } from './request-idle-callback'
-import { getDeploymentIdQueryOrEmptyString } from '../shared/lib/deployment-id'
+import { getimmutableDeploymentIdQuery } from '../shared/lib/deployment-id'
 import { encodeURIPath } from '../shared/lib/encode-uri-path'
 
 // 3.8s was arbitrarily chosen as it's what https://web.dev/interactive
@@ -118,10 +118,6 @@ function hasPrefetch(link?: HTMLLinkElement): boolean {
 }
 
 const canPrefetch: boolean = hasPrefetch()
-
-const getAssetQueryString = () => {
-  return getDeploymentIdQueryOrEmptyString()
-}
 
 function prefetchViaDom(
   href: string,
@@ -264,7 +260,7 @@ function getFilesForRoute(
       assetPrefix +
       '/_next/static/chunks/pages' +
       encodeURIPath(getAssetPathFromRoute(route, '.js')) +
-      getAssetQueryString()
+      getimmutableDeploymentIdQuery()
     return Promise.resolve({
       scripts: [__unsafeCreateTrustedScriptURL(scriptUrl)],
       // Styles are handled by `style-loader` in development:
@@ -281,10 +277,12 @@ function getFilesForRoute(
     return {
       scripts: allFiles
         .filter((v) => v.endsWith('.js'))
-        .map((v) => __unsafeCreateTrustedScriptURL(v) + getAssetQueryString()),
+        .map(
+          (v) => __unsafeCreateTrustedScriptURL(v) + getimmutableDeploymentIdQuery()
+        ),
       css: allFiles
         .filter((v) => v.endsWith('.css'))
-        .map((v) => v + getAssetQueryString()),
+        .map((v) => v + getimmutableDeploymentIdQuery()),
     }
   })
 }

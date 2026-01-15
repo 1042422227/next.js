@@ -386,7 +386,8 @@ async function exportAppImpl(
       join(distDir, 'server', `${NEXT_FONT_MANIFEST}.json`)
     ),
     images: nextConfig.images,
-    deploymentId: nextConfig.deploymentId,
+    immutableDeploymentId:
+      nextConfig.experimental.immutableDeploymentId || nextConfig.deploymentId,
     htmlLimitedBots: nextConfig.htmlLimitedBots.source,
     experimental: {
       clientTraceMetadata: nextConfig.experimental.clientTraceMetadata,

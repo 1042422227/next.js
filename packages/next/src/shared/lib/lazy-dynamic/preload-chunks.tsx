@@ -4,7 +4,7 @@ import { preload } from 'react-dom'
 
 import { workAsyncStorage } from '../../../server/app-render/work-async-storage.external'
 import { encodeURIPath } from '../encode-uri-path'
-import { getDeploymentIdQueryOrEmptyString } from '../deployment-id'
+import { getimmutableDeploymentIdQuery } from '../deployment-id'
 
 export function PreloadChunks({
   moduleIds,
@@ -38,7 +38,7 @@ export function PreloadChunks({
     return null
   }
 
-  const dplId = getDeploymentIdQueryOrEmptyString()
+  const dplId = getimmutableDeploymentIdQuery()
 
   return (
     <>

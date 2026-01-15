@@ -128,7 +128,8 @@ async function requestHandler(
 
     sharedContext: {
       buildId,
-      deploymentId: process.env.NEXT_DEPLOYMENT_ID,
+      immutableDeploymentId:
+        process.env.NEXT_ASSET_DEPLOYMENT_ID || process.env.NEXT_DEPLOYMENT_ID,
       customServer: undefined,
     },
 

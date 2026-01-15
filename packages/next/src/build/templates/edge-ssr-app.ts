@@ -84,7 +84,7 @@ async function requestHandler(
     resolvedPathname,
     interceptionRoutePatterns,
     routerServerContext,
-    deploymentId,
+    immutableDeploymentId,
   } = prepareResult
 
   // Initialize the cache handlers interface.
@@ -141,7 +141,7 @@ async function requestHandler(
       trailingSlash: nextConfig.trailingSlash,
       images: nextConfig.images,
       previewProps: prerenderManifest.preview,
-      deploymentId,
+      immutableDeploymentId: immutableDeploymentId,
       enableTainting: nextConfig.experimental.taint,
       htmlLimitedBots: nextConfig.htmlLimitedBots,
       reactMaxHeadersLength: nextConfig.reactMaxHeadersLength,
