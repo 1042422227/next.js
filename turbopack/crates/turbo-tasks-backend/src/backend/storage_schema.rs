@@ -420,10 +420,10 @@ impl TaskStorage {
     }
 
     /// Encode fields for the specified category
-    pub fn encode<E: bincode::enc::Encoder>(
+    pub fn encode(
         &self,
         category: SpecificTaskDataCategory,
-        encoder: &mut E,
+        encoder: &mut turbo_bincode::TurboBincodeEncoder<'_>,
     ) -> Result<(), bincode::error::EncodeError> {
         match category {
             SpecificTaskDataCategory::Meta => self.encode_meta(encoder),
@@ -432,10 +432,10 @@ impl TaskStorage {
     }
 
     /// Decode fields for the specified category
-    pub fn decode<D: bincode::de::Decoder>(
+    pub fn decode(
         &mut self,
         category: SpecificTaskDataCategory,
-        decoder: &mut D,
+        decoder: &mut turbo_bincode::TurboBincodeDecoder<'_>,
     ) -> Result<(), bincode::error::DecodeError> {
         match category {
             SpecificTaskDataCategory::Meta => self.decode_meta(decoder),
