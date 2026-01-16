@@ -2490,12 +2490,10 @@ impl AggregationUpdateQueue {
                 TaskDataCategory::Meta
             },
         );
-        if let Some(task_type) = task_type {
-            if !task.has_key(&CachedDataItemKey::TaskType {}) {
-                let _ = task.add_new(CachedDataItem::TaskType {
-                    value: Arc::from(task_type),
-                });
-            }
+        if let Some(task_type) = task_type
+            && !task.has_key(&CachedDataItemKey::TaskType {})
+        {
+            task.add_new(CachedDataItem::TaskType { value: task_type });
         }
         let state = get_mut_or_insert_with!(task, Activeness, || ActivenessState::new(task_id));
         let is_new = state.is_empty();
