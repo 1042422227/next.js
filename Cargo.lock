@@ -9543,6 +9543,7 @@ dependencies = [
  "serde_path_to_error",
  "sha2",
  "tempfile",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
  "triomphe 0.1.12",
