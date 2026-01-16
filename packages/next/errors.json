@@ -980,5 +980,5 @@
   "979": "invariant: expected %s bytes of postponed state but only received %s bytes",
   "980": "Failed to load client middleware manifest",
   "981": "globalErrorModule is required but not found in loader tree",
-  "982": "Invariant: globalErrorModule is required but not found in loader tree"
+  "982": "Invariant: global-error module is required but not found in loader tree"
 }
