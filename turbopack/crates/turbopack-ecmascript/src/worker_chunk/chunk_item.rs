@@ -39,13 +39,12 @@ impl WorkerLoaderChunkItem {
     #[turbo_tasks::function]
     async fn chunk_group(&self) -> Result<Vc<OutputAssetsWithReferenced>> {
         let module = self.module.await?;
-        let worker = self.chunking_context.evaluated_chunk_group_assets(
+        Ok(self.chunking_context.evaluated_chunk_group_assets(
             module.inner.ident().with_modifier(rcstr!("worker")),
             ChunkGroup::Isolated(ResolvedVc::upcast(module.inner)),
             *self.module_graph,
             AvailabilityInfo::root(),
-        );
-        Ok(worker)
+        ))
     }
 
     #[turbo_tasks::function]
