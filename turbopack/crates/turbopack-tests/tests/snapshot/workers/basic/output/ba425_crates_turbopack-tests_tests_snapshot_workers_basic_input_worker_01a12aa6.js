@@ -687,16 +687,26 @@ browserContextPrototype.P = resolveAbsolutePath;
  * The entrypoint is a pre-compiled worker runtime file. The params configure
  * which module chunks to load and which module to run as the entry point.
  *
+ * The params are a JSON array where:
+ * - Index 0: Array of chunk URLs to load via importScripts (-> TURBOPACK_NEXT_CHUNK_URLS)
+ * - Index 1+: Values for forwarded globals (in order of `forwardedGlobals`)
+ *
  * @param entrypoint URL path to the worker entrypoint chunk
  * @param moduleChunks list of module chunk paths to load
  * @param shared whether this is a SharedWorker (uses querystring for URL identity)
- */ function getWorkerURL(entrypoint, moduleChunks, shared) {
+ */ function getWorkerURL(entrypoint, moduleChunks, shared, forwardedGlobals) {
     const url = new URL(getChunkRelativeUrl(entrypoint), location.origin);
-    const params = {
-        S: CHUNK_SUFFIX,
-        N: globalThis.NEXT_DEPLOYMENT_ID,
-        NC: moduleChunks.map((chunk)=>getChunkRelativeUrl(chunk))
-    };
+    const chunkUrls = moduleChunks.map((chunk)=>getChunkRelativeUrl(chunk)).reverse();
+    // params[0] = chunk URLs, params[1] = CHUNK_SUFFIX (local const, not on globalThis)
+    // params[2+] = forwarded global values
+    const params = [
+        chunkUrls,
+        CHUNK_SUFFIX
+    ];
+    // Add forwarded global values in the same order as WORKER_FORWARDED_GLOBALS
+    for (const globalName of forwardedGlobals){
+        params.push(globalThis[globalName]);
+    }
     const paramsJson = JSON.stringify(params);
     if (shared) {
         url.searchParams.set('params', paramsJson);
