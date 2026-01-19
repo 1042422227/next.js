@@ -384,9 +384,9 @@ export async function exportPages(
       // Also tests for `inspect-brk`
       process.env.NODE_OPTIONS?.includes('--inspect')
 
-    const renderResumeDataCache = renderResumeDataCachesByPage[page]
+    const renderResumeDataCache = renderResumeDataCachesByPage[pageKey]
       ? createRenderResumeDataCache(
-          renderResumeDataCachesByPage[page],
+          renderResumeDataCachesByPage[pageKey],
           renderOpts.experimental.maxPostponedStateSizeBytes
         )
       : undefined
