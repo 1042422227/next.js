@@ -89,7 +89,8 @@ type ResolveAbsolutePath = (modulePath?: string) => string
 type GetWorkerURL = (
   entrypoint: ChunkPath,
   moduleChunks: ChunkPath[],
-  shared: boolean
+  shared: boolean,
+  forwardedGlobals: string[]
 ) => URL
 
 type ExternalRequire = (

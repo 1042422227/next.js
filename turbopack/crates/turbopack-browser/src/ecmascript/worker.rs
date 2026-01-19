@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use anyhow::Result;
 use turbo_rcstr::{RcStr, rcstr};
 use turbo_tasks::{ResolvedVc, ValueToString, Vc};
@@ -5,21 +7,25 @@ use turbo_tasks_fs::{File, FileContent, FileSystemPath};
 use turbopack_core::{
     asset::{Asset, AssetContent},
     chunk::{ChunkingContext, MinifyType},
-    code_builder::Code,
-    context::AssetContext,
+    code_builder::{Code, CodeBuilder},
     ident::AssetIdent,
     output::{OutputAsset, OutputAssetsReference, OutputAssetsWithReferenced},
     source_map::{GenerateSourceMap, SourceMapAsset},
 };
 use turbopack_ecmascript::minify::minify;
-use turbopack_ecmascript_runtime::get_worker_runtime_code;
 
 /// A pre-compiled worker entrypoint that bootstraps workers by reading config from URL params.
-/// The entrypoint is keyed by (chunking_context, asset_context) to ensure proper compilation.
+///
+/// The worker receives a JSON array via URL params where:
+/// - Index 0: Array of chunk URLs (-> TURBOPACK_NEXT_CHUNK_URLS, loaded via importScripts)
+/// - Index 1+: Values for forwarded globals (in order of `forwarded_globals`)
 #[turbo_tasks::value(shared)]
 pub struct EcmascriptBrowserWorkerEntrypoint {
     chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
-    asset_context: ResolvedVc<Box<dyn AssetContext>>,
+    /// Global variable names to forward from main thread to worker.
+    /// These are assigned to `self` in the worker scope before loading chunks.
+    /// Values are passed via URL params at indices 1+.
+    forwarded_globals: ResolvedVc<Vec<RcStr>>,
 }
 
 #[turbo_tasks::value_impl]
@@ -27,11 +33,11 @@ impl EcmascriptBrowserWorkerEntrypoint {
     #[turbo_tasks::function]
     pub async fn new(
         chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
-        asset_context: ResolvedVc<Box<dyn AssetContext>>,
+        forwarded_globals: Vc<Vec<RcStr>>,
     ) -> Result<Vc<Self>> {
         Ok(EcmascriptBrowserWorkerEntrypoint {
             chunking_context,
-            asset_context,
+            forwarded_globals: forwarded_globals.to_resolved().await?,
         }
         .cell())
     }
@@ -45,10 +51,8 @@ impl EcmascriptBrowserWorkerEntrypoint {
             .reference_chunk_source_maps(Vc::upcast(self))
             .await?;
 
-        let mut code = get_worker_runtime_code(*this.asset_context, source_maps)?
-            .owned()
-            .await?;
-
+        let forwarded_globals = this.forwarded_globals.await?;
+        let mut code = generate_worker_bootstrap_code(&*forwarded_globals, source_maps)?;
         if let MinifyType::Minify { mangle } = *this.chunking_context.minify_type().await? {
             code = minify(code, source_maps, mangle)?;
         }
@@ -131,4 +135,63 @@ impl GenerateSourceMap for EcmascriptBrowserWorkerEntrypoint {
     fn generate_source_map(self: Vc<Self>) -> Vc<FileContent> {
         self.code().generate_source_map()
     }
+}
+
+/// Generates the worker bootstrap code as inline JavaScript.
+///
+/// The worker receives a JSON array via URL params where:
+/// - Index 0: Array of chunk URLs (-> TURBOPACK_NEXT_CHUNK_URLS, loaded via importScripts)
+/// - Index 1+: Values for forwarded globals (in order of `forwarded_globals`)
+///
+/// The generated code:
+/// 1. Parses the params from URL hash or querystring
+/// 2. Sets TURBOPACK_NEXT_CHUNK_URLS and forwarded globals on self via Object.assign
+/// 3. Loads chunks via importScripts (in reverse order)
+fn generate_worker_bootstrap_code(
+    forwarded_globals: &[RcStr],
+    _generate_source_map: bool,
+) -> Result<Code> {
+    let mut code: CodeBuilder = CodeBuilder::default();
+
+    // Generate the Object.assign properties for forwarded globals
+    // TURBOPACK_NEXT_CHUNK_URLS is always params[0], then forwarded globals at params[1+]
+    let mut global_assignments = vec!["TURBOPACK_NEXT_CHUNK_URLS: params[0]".to_string()];
+    for (i, name) in forwarded_globals.iter().enumerate() {
+        global_assignments.push(format!("{}: params[{}]", name, i + 1));
+    }
+    let globals_js = global_assignments.join(",\n    ");
+
+    write!(
+        code,
+        r##"(function() {{
+  var url = new URL(location.href);
+  var paramsString = url.searchParams.get("params");
+  if (!paramsString && url.hash.startsWith("#params=")) {{
+    paramsString = decodeURIComponent(url.hash.slice("#params=".length));
+  }}
+  if (!paramsString) return;
+
+  var params = JSON.parse(paramsString);
+
+  // Set worker globals before loading chunks
+  Object.assign(self, {{
+    {0}
+  }});
+
+  // Load chunks via importScripts (in reverse order for correct execution)
+  var chunkUrls = params[0];
+  if (chunkUrls && chunkUrls.length > 0) {{
+    importScripts.apply(
+      self,
+      chunkUrls.map(function(chunk) {{
+        return new URL(chunk, location.origin).toString();
+      }}).reverse()
+    );
+  }}
+}})();
+"##,
+        globals_js
+    )?;
+
+    Ok(code.build())
 }

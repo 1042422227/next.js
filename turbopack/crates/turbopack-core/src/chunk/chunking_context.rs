@@ -2,7 +2,7 @@ use anyhow::{Result, bail};
 use bincode::{Decode, Encode};
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
-use turbo_rcstr::RcStr;
+use turbo_rcstr::{RcStr, rcstr};
 use turbo_tasks::{NonLocalValue, ResolvedVc, TaskInput, Upcast, Vc, trace::TraceRawVcs};
 use turbo_tasks_fs::FileSystemPath;
 use turbo_tasks_hash::DeterministicHash;
@@ -445,6 +445,12 @@ pub trait ChunkingContext {
     /// Returns whether debug IDs are enabled for this chunking context.
     #[turbo_tasks::function]
     fn debug_ids_enabled(self: Vc<Self>) -> Vc<bool>;
+
+    /// Returns the list of global variable names to forward to workers.
+    #[turbo_tasks::function]
+    fn worker_forwarded_globals(self: Vc<Self>) -> Vc<Vec<RcStr>> {
+        Vc::cell(vec![rcstr!("TURBOPACK_CHUNK_SUFFIX")])
+    }
 
     /// Returns the worker entrypoint for this chunking context.
     /// The asset_context should come from the origin where the worker was created.

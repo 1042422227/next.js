@@ -901,14 +901,15 @@ impl ChunkingContext for BrowserChunkingContext {
     }
 
     #[turbo_tasks::function]
-    fn worker_entrypoint(
+    async fn worker_entrypoint(
         self: Vc<Self>,
-        asset_context: Vc<Box<dyn AssetContext>>,
-    ) -> Vc<Box<dyn OutputAsset>> {
-        Vc::upcast(EcmascriptBrowserWorkerEntrypoint::new(
-            Vc::upcast(self),
-            asset_context,
-        ))
+        _asset_context: Vc<Box<dyn AssetContext>>,
+    ) -> Result<Vc<Box<dyn OutputAsset>>> {
+        let chunking_context: Vc<Box<dyn ChunkingContext>> = Vc::upcast(self);
+        let resolved = chunking_context.to_resolved().await?;
+        let forwarded_globals = chunking_context.worker_forwarded_globals();
+        let entrypoint = EcmascriptBrowserWorkerEntrypoint::new(*resolved, forwarded_globals);
+        Ok(Vc::upcast(entrypoint))
     }
 }
 
