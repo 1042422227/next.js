@@ -880,7 +880,7 @@ export interface ExperimentalConfig {
 
   /**
    * Maximum number of responses to cache in the in-memory LRU cache for
-   * minimal mode (standalone deployments). Defaults to 5.
+   * minimal mode (standalone deployments). Defaults to 30.
    */
   maxResponseCacheSize?: number
 }
@@ -1610,7 +1610,7 @@ export const defaultConfig = Object.freeze({
     turbopackFileSystemCacheForBuild: false,
     turbopackInferModuleSideEffects: true,
     devCacheControlNoCache: false,
-    maxResponseCacheSize: 10,
+    maxResponseCacheSize: 30,
   },
   htmlLimitedBots: undefined,
   bundlePagesRouterDependencies: false,
