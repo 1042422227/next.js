@@ -578,6 +578,9 @@ impl ModuleOptions {
             );
         }
 
+        // Add module_rules before webpack_loaders so that user-defined rules can override defaults
+        rules.extend(module_rules.iter().cloned());
+
         if let Some(webpack_loaders_options) = enable_webpack_loaders {
             let webpack_loaders_options = webpack_loaders_options.await?;
             let execution_context =
@@ -626,9 +629,11 @@ impl ModuleOptions {
                 let mut all_rule_condition = RuleCondition::All(rule_conditions);
                 all_rule_condition.flatten();
                 if !matches!(all_rule_condition, RuleCondition::False) {
-                    rules.push(ModuleRule::new(
-                        all_rule_condition,
-                        vec![ModuleRuleEffect::SourceTransforms(ResolvedVc::cell(vec![
+                    let mut effects = Vec::new();
+
+                    // Add source transforms if loaders are specified
+                    if !rule.loaders.await?.is_empty() {
+                        effects.push(ModuleRuleEffect::SourceTransforms(ResolvedVc::cell(vec![
                             ResolvedVc::upcast(
                                 WebpackLoaders::new(
                                     node_evaluate_asset_context(
@@ -647,8 +652,26 @@ impl ModuleOptions {
                                 .to_resolved()
                                 .await?,
                             ),
-                        ]))],
-                    ));
+                        ])));
+                    }
+
+                    // Add module type if specified
+                    if let Some(module_type_str) = &rule.module_type {
+                        if let Some(module_type) = ModuleType::from_str_with_defaults(
+                            module_type_str,
+                            ecma_preprocess,
+                            main,
+                            postprocess,
+                            ecmascript_options_vc,
+                            environment,
+                        ) {
+                            effects.push(ModuleRuleEffect::ModuleType(module_type));
+                        }
+                    }
+
+                    if !effects.is_empty() {
+                        rules.push(ModuleRule::new(all_rule_condition, effects));
+                    }
                 }
             }
         }
@@ -827,8 +850,6 @@ impl ModuleOptions {
                 ]))],
             ));
         }
-
-        rules.extend(module_rules.iter().cloned());
 
         Ok(ModuleOptions::cell(ModuleOptions { rules }))
     }

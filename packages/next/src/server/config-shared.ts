@@ -121,10 +121,22 @@ export type TurbopackRuleCondition =
       query?: string | RegExp
     }
 
+export type TurbopackModuleType =
+  | 'asset'
+  | 'ecmascript'
+  | 'typescript'
+  | 'css'
+  | 'css-module'
+  | 'wasm'
+  | 'raw'
+  | 'node'
+  | 'bytes'
+
 export type TurbopackRuleConfigItem = {
-  loaders: TurbopackLoaderItem[]
+  loaders?: TurbopackLoaderItem[]
   as?: string
   condition?: TurbopackRuleCondition
+  type?: TurbopackModuleType
 }
 
 /**
