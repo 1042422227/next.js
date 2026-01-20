@@ -455,11 +455,7 @@ pub trait ChunkingContext {
     /// Returns the worker entrypoint for this chunking context.
     /// The asset_context should come from the origin where the worker was created.
     #[turbo_tasks::function]
-    async fn worker_entrypoint(
-        self: Vc<Self>,
-        asset_context: Vc<Box<dyn AssetContext>>,
-    ) -> Result<Vc<Box<dyn OutputAsset>>> {
-        let _ = asset_context;
+    async fn worker_entrypoint(self: Vc<Self>) -> Result<Vc<Box<dyn OutputAsset>>> {
         bail!(
             "Worker entrypoint is not supported by {name}",
             name = self.name().await?

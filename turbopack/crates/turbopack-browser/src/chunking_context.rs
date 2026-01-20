@@ -916,10 +916,7 @@ impl ChunkingContext for BrowserChunkingContext {
     }
 
     #[turbo_tasks::function]
-    async fn worker_entrypoint(
-        self: Vc<Self>,
-        _asset_context: Vc<Box<dyn AssetContext>>,
-    ) -> Result<Vc<Box<dyn OutputAsset>>> {
+    async fn worker_entrypoint(self: Vc<Self>) -> Result<Vc<Box<dyn OutputAsset>>> {
         let chunking_context: Vc<Box<dyn ChunkingContext>> = Vc::upcast(self);
         let resolved = chunking_context.to_resolved().await?;
         let forwarded_globals = chunking_context.worker_forwarded_globals();
