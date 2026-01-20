@@ -89,18 +89,17 @@ impl EcmascriptChunkItem for WorkerLoaderChunkItem {
         // Determine if this is a SharedWorker
         let is_shared = matches!(this.worker_type, WorkerReferenceSubType::SharedWorker);
 
-        // Get the list of globals to forward to the worker
         let forwarded_globals = this.chunking_context.worker_forwarded_globals().await?;
 
         // Generate code that creates a worker URL with the entrypoint and chunk paths
         let code = formatdoc! {
             r#"
-                {TURBOPACK_EXPORT_VALUE}({TURBOPACK_WORKER_URL}({entrypoint}, {chunks}, {shared}, {forwarded_globals}));
+                {TURBOPACK_EXPORT_VALUE}({TURBOPACK_WORKER_URL}({entrypoint}, {chunks}, {shared}, [{forwarded_globals}]));
             "#,
             entrypoint = StringifyJs(&entrypoint_path),
             chunks = StringifyJs(&chunks_data),
             shared = is_shared,
-            forwarded_globals = StringifyJs(&*forwarded_globals),
+            forwarded_globals = StringifyJs(&forwarded_globals),
         };
 
         Ok(EcmascriptChunkItemContent {

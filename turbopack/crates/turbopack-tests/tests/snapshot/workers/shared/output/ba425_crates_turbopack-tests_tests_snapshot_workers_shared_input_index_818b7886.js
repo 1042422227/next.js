@@ -697,8 +697,7 @@ browserContextPrototype.P = resolveAbsolutePath;
  */ function getWorkerURL(entrypoint, moduleChunks, shared, forwardedGlobals) {
     const url = new URL(getChunkRelativeUrl(entrypoint), location.origin);
     const chunkUrls = moduleChunks.map((chunk)=>getChunkRelativeUrl(chunk)).reverse();
-    // params[0] = chunk URLs, params[1] = CHUNK_SUFFIX (local const, not on globalThis)
-    // params[2+] = forwarded global values
+    // params[0] = chunk URLs, params[1] = CHUNK_SUFFIX, params[2+] = forwarded globals
     const params = [
         chunkUrls,
         CHUNK_SUFFIX
@@ -1858,7 +1857,7 @@ let DEV_BACKEND;
     }
 })();
 function _eval({ code, url, map }) {
-    code += `\n\n//# sourceURL=${encodeURI(location.origin + CHUNK_BASE_PATH + url + CHUNK_SUFFIX)}`;
+    code += `\n\n//# sourceURL=${encodeURI(location.origin + CHUNK_BASE_PATH + url + TURBOPACK_CHUNK_SUFFIX)}`;
     if (map) {
         code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${btoa(// btoa doesn't handle nonlatin characters, so escape them as \x sequences
         // See https://stackoverflow.com/a/26603875

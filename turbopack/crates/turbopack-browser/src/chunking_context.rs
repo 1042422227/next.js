@@ -222,7 +222,9 @@ impl BrowserChunkingContextBuilder {
     }
 
     pub fn worker_forwarded_globals(mut self, globals: Vec<RcStr>) -> Self {
-        self.chunking_context.worker_forwarded_globals = globals;
+        self.chunking_context
+            .worker_forwarded_globals
+            .extend(globals);
         self
     }
 
@@ -359,7 +361,7 @@ impl BrowserChunkingContext {
                 unused_references: None,
                 chunking_configs: Default::default(),
                 should_use_absolute_url_references: false,
-                worker_forwarded_globals: Default::default(),
+                worker_forwarded_globals: vec![],
             },
         }
     }

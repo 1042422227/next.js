@@ -708,7 +708,7 @@ function loadWebAssemblyModule(chunkPath, _edgeModule) {
     return compileWebAssemblyFromPath(resolved);
 }
 contextPrototype.u = loadWebAssemblyModule;
-function getWorkerURL(_entrypoint, _moduleChunks, _shared) {
+function getWorkerURL(_entrypoint, _moduleChunks, _shared, _forwardedGlobals) {
     throw new Error('Worker urls are not implemented yet for Node.js');
 }
 nodeContextPrototype.b = getWorkerURL;

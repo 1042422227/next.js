@@ -447,7 +447,6 @@ pub trait ChunkingContext {
     fn debug_ids_enabled(self: Vc<Self>) -> Vc<bool>;
 
     /// Returns the list of global variable names to forward to workers.
-    /// Note: CHUNK_SUFFIX is handled specially (not via globalThis), so it's not in this list.
     #[turbo_tasks::function]
     fn worker_forwarded_globals(self: Vc<Self>) -> Vc<Vec<RcStr>> {
         Vc::cell(vec![])

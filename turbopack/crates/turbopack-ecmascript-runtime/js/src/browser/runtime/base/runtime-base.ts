@@ -337,8 +337,7 @@ function getWorkerURL(
   const chunkUrls = moduleChunks
     .map((chunk) => getChunkRelativeUrl(chunk))
     .reverse()
-  // params[0] = chunk URLs, params[1] = CHUNK_SUFFIX (local const, not on globalThis)
-  // params[2+] = forwarded global values
+  // params[0] = chunk URLs, params[1] = CHUNK_SUFFIX, params[2+] = forwarded globals
   const params: unknown[] = [chunkUrls, CHUNK_SUFFIX]
 
   // Add forwarded global values in the same order as WORKER_FORWARDED_GLOBALS

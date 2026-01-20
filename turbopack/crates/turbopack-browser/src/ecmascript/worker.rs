@@ -52,7 +52,7 @@ impl EcmascriptBrowserWorkerEntrypoint {
             .await?;
 
         let forwarded_globals = this.forwarded_globals.await?;
-        let mut code = generate_worker_bootstrap_code(&*forwarded_globals, source_maps)?;
+        let mut code = generate_worker_bootstrap_code(&*forwarded_globals)?;
         if let MinifyType::Minify { mangle } = *this.chunking_context.minify_type().await? {
             code = minify(code, source_maps, mangle)?;
         }
@@ -140,25 +140,13 @@ impl GenerateSourceMap for EcmascriptBrowserWorkerEntrypoint {
 /// The worker receives a JSON array via URL params where:
 /// - Index 0: Array of chunk URLs (-> TURBOPACK_NEXT_CHUNK_URLS, loaded via importScripts)
 /// - Index 1+: Values for forwarded globals (in order of `forwarded_globals`)
-///
-/// The generated code:
-/// 1. Verifies we're running in a worker context (security check)
-/// 2. Parses the params from URL hash or querystring
-/// 3. Validates chunk URLs are same-origin (security check)
-/// 4. Sets TURBOPACK_NEXT_CHUNK_URLS and forwarded globals on self via Object.assign
-/// 5. Loads chunks via importScripts (in reverse order)
-fn generate_worker_bootstrap_code(
-    forwarded_globals: &[RcStr],
-    _generate_source_map: bool,
-) -> Result<Code> {
+fn generate_worker_bootstrap_code(forwarded_globals: &[RcStr]) -> Result<Code> {
     let mut code: CodeBuilder = CodeBuilder::default();
 
     // Generate the Object.assign properties for forwarded globals
-    // params[0] = chunk URLs, params[1] = CHUNK_SUFFIX, params[2+] = forwarded globals
+    // params[0] = chunk URLs, params[1] = TURBOPACK_CHUNK_SUFFIX, params[2+] = forwarded globals
     let mut global_assignments = vec![
         "TURBOPACK_NEXT_CHUNK_URLS: chunkUrls".to_string(),
-        // TURBOPACK_CHUNK_SUFFIX is the worker-side name for CHUNK_SUFFIX (params[1])
-        // Default to empty string to avoid falling through to document.currentScript
         "TURBOPACK_CHUNK_SUFFIX: typeof params[1] === 'string' ? params[1] : ''".to_string(),
     ];
     for (i, name) in forwarded_globals.iter().enumerate() {
