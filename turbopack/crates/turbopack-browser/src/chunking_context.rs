@@ -33,7 +33,7 @@ use turbopack_ecmascript::{
     chunk::EcmascriptChunk,
     manifest::{chunk_asset::ManifestAsyncModule, loader_item::ManifestLoaderChunkItem},
 };
-use turbopack_ecmascript_runtime::{ChunkSuffix, RuntimeType};
+use turbopack_ecmascript_runtime::{AssetSuffix, RuntimeType};
 
 use crate::ecmascript::{
     chunk::EcmascriptBrowserChunk,
@@ -130,8 +130,8 @@ impl BrowserChunkingContextBuilder {
         self
     }
 
-    pub fn chunk_suffix(mut self, chunk_suffix: ResolvedVc<ChunkSuffix>) -> Self {
-        self.chunking_context.chunk_suffix = Some(chunk_suffix);
+    pub fn asset_suffix(mut self, asset_suffix: ResolvedVc<AssetSuffix>) -> Self {
+        self.chunking_context.asset_suffix = Some(asset_suffix);
         self
     }
 
@@ -259,7 +259,7 @@ pub struct BrowserChunkingContext {
     chunk_base_path: Option<RcStr>,
     /// Suffix that will be appended to all chunk URLs when loading them.
     /// This path will not appear in chunk paths or chunk data.
-    chunk_suffix: Option<ResolvedVc<ChunkSuffix>>,
+    asset_suffix: Option<ResolvedVc<AssetSuffix>>,
     /// URL prefix that will be prepended to all static asset URLs when loading
     /// them.
     asset_base_path: Option<RcStr>,
@@ -329,7 +329,7 @@ impl BrowserChunkingContext {
                 asset_root_path,
                 asset_root_paths: Default::default(),
                 chunk_base_path: None,
-                chunk_suffix: None,
+                asset_suffix: None,
                 asset_base_path: None,
                 asset_base_paths: Default::default(),
                 enable_hot_module_replacement: false,
@@ -433,11 +433,11 @@ impl BrowserChunkingContext {
 
     /// Returns the asset suffix path.
     #[turbo_tasks::function]
-    pub fn chunk_suffix(&self) -> Vc<ChunkSuffix> {
-        if let Some(chunk_suffix) = self.chunk_suffix {
-            *chunk_suffix
+    pub fn asset_suffix(&self) -> Vc<AssetSuffix> {
+        if let Some(asset_suffix) = self.asset_suffix {
+            *asset_suffix
         } else {
-            ChunkSuffix::None.cell()
+            AssetSuffix::None.cell()
         }
     }
 

@@ -10,7 +10,7 @@ if (!Array.isArray(globalThis.TURBOPACK)) {
 const CHUNK_BASE_PATH = "";
 const RELATIVE_ROOT_PATH = "../../../../../../..";
 const RUNTIME_PUBLIC_PATH = "";
-const CHUNK_SUFFIX = "";
+const ASSET_SUFFIX = "";
 /**
  * This file contains runtime types and functions that are shared between all
  * TurboPack ECMAScript runtimes.
@@ -1181,13 +1181,19 @@ browserContextPrototype.R = resolvePathFromModule;
 }
 browserContextPrototype.P = resolveAbsolutePath;
 /**
+ * Exports a URL with the static suffix appended.
+ */ function exportUrl(url, id) {
+    exportValue.call(this, `${url}${ASSET_SUFFIX}`, id);
+}
+browserContextPrototype.q = exportUrl;
+/**
  * Returns a blob URL for the worker.
  * @param chunks list of chunks to load
  */ function getWorkerBlobURL(chunks) {
     // It is important to reverse the array so when bootstrapping we can infer what chunk is being
     // evaluated by poping urls off of this array.  See `getPathFromScript`
     var bootstrap = `self.TURBOPACK_WORKER_LOCATION = ${JSON.stringify(location.origin)};
-self.TURBOPACK_CHUNK_SUFFIX = ${JSON.stringify(CHUNK_SUFFIX)};
+self.TURBOPACK_ASSET_SUFFIX = ${JSON.stringify(ASSET_SUFFIX)};
 self.NEXT_DEPLOYMENT_ID = ${JSON.stringify(globalThis.NEXT_DEPLOYMENT_ID)};
 self.TURBOPACK_NEXT_CHUNK_URLS = ${JSON.stringify(chunks.reverse().map(getChunkRelativeUrl), null, 2)};
 importScripts(...self.TURBOPACK_NEXT_CHUNK_URLS.map(c => self.TURBOPACK_WORKER_LOCATION + c).reverse());`;
@@ -1209,7 +1215,7 @@ browserContextPrototype.b = getWorkerBlobURL;
  */ function getChunkRelativeUrl(chunkPath) {
     return `${CHUNK_BASE_PATH}${chunkPath.split('/').map(function(p) {
         return encodeURIComponent(p);
-    }).join('/')}${CHUNK_SUFFIX}`;
+    }).join('/')}${ASSET_SUFFIX}`;
 }
 function getPathFromScript(chunkScript) {
     if (typeof chunkScript === 'string') {
@@ -1445,11 +1451,11 @@ function _ts_generator(thisArg, body) {
  * It will be appended to the base runtime code.
  */ /* eslint-disable @typescript-eslint/no-unused-vars */ /// <reference path="../../../browser/runtime/base/runtime-base.ts" />
 /// <reference path="../../../shared/runtime-types.d.ts" />
-function getChunkSuffixFromScriptSrc() {
-    var _self_TURBOPACK_CHUNK_SUFFIX;
+function getAssetSuffixFromScriptSrc() {
+    var _self_TURBOPACK_ASSET_SUFFIX;
     var _document_currentScript_getAttribute, _document_currentScript_getAttribute1, _document_currentScript, _document;
-    // TURBOPACK_CHUNK_SUFFIX is set in web workers
-    return ((_self_TURBOPACK_CHUNK_SUFFIX = self.TURBOPACK_CHUNK_SUFFIX) !== null && _self_TURBOPACK_CHUNK_SUFFIX !== void 0 ? _self_TURBOPACK_CHUNK_SUFFIX : (_document = document) === null || _document === void 0 ? void 0 : (_document_currentScript = _document.currentScript) === null || _document_currentScript === void 0 ? void 0 : (_document_currentScript_getAttribute1 = _document_currentScript.getAttribute) === null || _document_currentScript_getAttribute1 === void 0 ? void 0 : (_document_currentScript_getAttribute = _document_currentScript_getAttribute1.call(_document_currentScript, 'src')) === null || _document_currentScript_getAttribute === void 0 ? void 0 : _document_currentScript_getAttribute.replace(/^(.*(?=\?)|^.*$)/, '')) || '';
+    // TURBOPACK_ASSET_SUFFIX is set in web workers
+    return ((_self_TURBOPACK_ASSET_SUFFIX = self.TURBOPACK_ASSET_SUFFIX) !== null && _self_TURBOPACK_ASSET_SUFFIX !== void 0 ? _self_TURBOPACK_ASSET_SUFFIX : (_document = document) === null || _document === void 0 ? void 0 : (_document_currentScript = _document.currentScript) === null || _document_currentScript === void 0 ? void 0 : (_document_currentScript_getAttribute1 = _document_currentScript.getAttribute) === null || _document_currentScript_getAttribute1 === void 0 ? void 0 : (_document_currentScript_getAttribute = _document_currentScript_getAttribute1.call(_document_currentScript, 'src')) === null || _document_currentScript_getAttribute === void 0 ? void 0 : _document_currentScript_getAttribute.replace(/^(.*(?=\?)|^.*$)/, '')) || '';
 }
 var BACKEND;
 /**

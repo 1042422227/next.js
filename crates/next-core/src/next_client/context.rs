@@ -11,7 +11,7 @@ use turbopack::module_options::{
     side_effect_free_packages_glob,
 };
 use turbopack_browser::{
-    BrowserChunkingContext, ChunkSuffix, ContentHashing, CurrentChunkMethod,
+    AssetSuffix, BrowserChunkingContext, ContentHashing, CurrentChunkMethod,
     react_refresh::assert_can_resolve_react_refresh,
 };
 use turbopack_core::{
@@ -468,7 +468,7 @@ pub async fn get_client_chunking_context(
         next_mode.runtime_type(),
     )
     .chunk_base_path(Some(asset_prefix.clone()))
-    .chunk_suffix(ChunkSuffix::FromScriptSrc.resolved_cell())
+    .asset_suffix(AssetSuffix::FromScriptSrc.resolved_cell())
     .minify_type(if *minify.await? {
         MinifyType::Minify {
             mangle: (!*no_mangling.await?).then_some(MangleType::OptimalSize),

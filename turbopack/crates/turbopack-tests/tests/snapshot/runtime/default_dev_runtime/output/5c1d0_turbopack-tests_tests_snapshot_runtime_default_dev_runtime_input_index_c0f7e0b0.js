@@ -10,7 +10,7 @@ if (!Array.isArray(globalThis.TURBOPACK)) {
 const CHUNK_BASE_PATH = "";
 const RELATIVE_ROOT_PATH = "../../../../../../..";
 const RUNTIME_PUBLIC_PATH = "";
-const CHUNK_SUFFIX = "";
+const ASSET_SUFFIX = "";
 /**
  * This file contains runtime types and functions that are shared between all
  * TurboPack ECMAScript runtimes.
@@ -683,13 +683,19 @@ browserContextPrototype.R = resolvePathFromModule;
 }
 browserContextPrototype.P = resolveAbsolutePath;
 /**
+ * Exports a URL with the static suffix appended.
+ */ function exportUrl(url, id) {
+    exportValue.call(this, `${url}${ASSET_SUFFIX}`, id);
+}
+browserContextPrototype.q = exportUrl;
+/**
  * Returns a blob URL for the worker.
  * @param chunks list of chunks to load
  */ function getWorkerBlobURL(chunks) {
     // It is important to reverse the array so when bootstrapping we can infer what chunk is being
     // evaluated by poping urls off of this array.  See `getPathFromScript`
     let bootstrap = `self.TURBOPACK_WORKER_LOCATION = ${JSON.stringify(location.origin)};
-self.TURBOPACK_CHUNK_SUFFIX = ${JSON.stringify(CHUNK_SUFFIX)};
+self.TURBOPACK_ASSET_SUFFIX = ${JSON.stringify(ASSET_SUFFIX)};
 self.NEXT_DEPLOYMENT_ID = ${JSON.stringify(globalThis.NEXT_DEPLOYMENT_ID)};
 self.TURBOPACK_NEXT_CHUNK_URLS = ${JSON.stringify(chunks.reverse().map(getChunkRelativeUrl), null, 2)};
 importScripts(...self.TURBOPACK_NEXT_CHUNK_URLS.map(c => self.TURBOPACK_WORKER_LOCATION + c).reverse());`;
@@ -709,7 +715,7 @@ browserContextPrototype.b = getWorkerBlobURL;
 /**
  * Returns the URL relative to the origin where a chunk can be fetched from.
  */ function getChunkRelativeUrl(chunkPath) {
-    return `${CHUNK_BASE_PATH}${chunkPath.split('/').map((p)=>encodeURIComponent(p)).join('/')}${CHUNK_SUFFIX}`;
+    return `${CHUNK_BASE_PATH}${chunkPath.split('/').map((p)=>encodeURIComponent(p)).join('/')}${ASSET_SUFFIX}`;
 }
 function getPathFromScript(chunkScript) {
     if (typeof chunkScript === 'string') {
@@ -1600,9 +1606,9 @@ globalThis.TURBOPACK_CHUNK_UPDATE_LISTENERS ??= [];
  * It will be appended to the base runtime code.
  */ /* eslint-disable @typescript-eslint/no-unused-vars */ /// <reference path="../../../browser/runtime/base/runtime-base.ts" />
 /// <reference path="../../../shared/runtime-types.d.ts" />
-function getChunkSuffixFromScriptSrc() {
-    // TURBOPACK_CHUNK_SUFFIX is set in web workers
-    return (self.TURBOPACK_CHUNK_SUFFIX ?? document?.currentScript?.getAttribute?.('src')?.replace(/^(.*(?=\?)|^.*$)/, '')) || '';
+function getAssetSuffixFromScriptSrc() {
+    // TURBOPACK_ASSET_SUFFIX is set in web workers
+    return (self.TURBOPACK_ASSET_SUFFIX ?? document?.currentScript?.getAttribute?.('src')?.replace(/^(.*(?=\?)|^.*$)/, '')) || '';
 }
 let BACKEND;
 /**
@@ -1843,7 +1849,7 @@ let DEV_BACKEND;
     }
 })();
 function _eval({ code, url, map }) {
-    code += `\n\n//# sourceURL=${encodeURI(location.origin + CHUNK_BASE_PATH + url + CHUNK_SUFFIX)}`;
+    code += `\n\n//# sourceURL=${encodeURI(location.origin + CHUNK_BASE_PATH + url + ASSET_SUFFIX)}`;
     if (map) {
         code += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${btoa(// btoa doesn't handle nonlatin characters, so escape them as \x sequences
         // See https://stackoverflow.com/a/26603875
