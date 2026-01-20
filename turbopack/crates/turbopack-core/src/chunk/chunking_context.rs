@@ -13,7 +13,6 @@ use crate::{
         ChunkItem, ChunkType, ChunkableModule, EvaluatableAssets,
         availability_info::AvailabilityInfo, chunk_id_strategy::ModuleIdStrategy,
     },
-    context::AssetContext,
     environment::Environment,
     ident::AssetIdent,
     module::Module,

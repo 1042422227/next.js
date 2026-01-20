@@ -64,12 +64,7 @@ impl EcmascriptChunkItem for WorkerLoaderChunkItem {
         let this = self.await?;
 
         // Get the worker entrypoint for this chunking context
-        let asset_context = *this.asset_context;
-        let entrypoint_full_path = this
-            .chunking_context
-            .worker_entrypoint(asset_context)
-            .path()
-            .await?;
+        let entrypoint_full_path = this.chunking_context.worker_entrypoint().path().await?;
 
         // Get the entrypoint path relative to output root
         let output_root = this.chunking_context.output_root().owned().await?;
@@ -115,10 +110,9 @@ impl OutputAssetsReference for WorkerLoaderChunkItem {
     #[turbo_tasks::function]
     async fn references(self: Vc<Self>) -> Result<Vc<OutputAssetsWithReferenced>> {
         let this = self.await?;
-        let asset_context = *this.asset_context;
         Ok(self
             .chunk_group()
-            .concatenate_asset(this.chunking_context.worker_entrypoint(asset_context)))
+            .concatenate_asset(this.chunking_context.worker_entrypoint()))
     }
 }
 
