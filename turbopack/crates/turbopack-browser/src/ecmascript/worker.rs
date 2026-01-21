@@ -52,7 +52,7 @@ impl EcmascriptBrowserWorkerEntrypoint {
             .await?;
 
         let forwarded_globals = this.forwarded_globals.await?;
-        let mut code = generate_worker_bootstrap_code(&*forwarded_globals)?;
+        let mut code = generate_worker_bootstrap_code(&forwarded_globals)?;
         if let MinifyType::Minify { mangle } = *this.chunking_context.minify_type().await? {
             code = minify(code, source_maps, mangle)?;
         }
