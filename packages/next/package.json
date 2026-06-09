@@ -101,7 +101,7 @@
     "@swc/helpers": "0.5.15",
     "baseline-browser-mapping": "^2.8.3",
     "caniuse-lite": "^1.0.30001579",
-    "postcss": "8.4.31",
+    "postcss": "8.5.10",
     "styled-jsx": "5.1.6"
   },
   "peerDependencies": {
@@ -256,7 +256,7 @@
     "cssnano-preset-default": "7.0.6",
     "data-uri-to-buffer": "3.0.1",
     "debug": "4.1.1",
-    "devalue": "2.0.1",
+    "devalue": "5.8.1",
     "domain-browser": "4.19.0",
     "edge-runtime": "4.0.1",
     "events": "3.3.0",
