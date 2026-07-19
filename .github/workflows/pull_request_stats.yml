@@ -189,4 +189,134 @@ jobs:
           # the bundlers genuinely failed (post an "all failed" notice) or the
           # run was cancelled/superseded (stay silent and let pr-ci-comment.mjs
           # post the cancelled notice).
-          STATS_RESULT: ${{ needs.stats.result }}
+          STATS_RESULT: ${{ needs.stats.result }}I'll help you find a solution for this failing job. Let me start by retrieving the job logs.I'll retrieve the job logs to identify the failure and provide a solution.Now let me get the relevant files to understand the context:Now let me examine the workflow file and the aggregation script to understand the issue:## Problem
+
+The job is failing because the `stats-aggregate` step tries to read from the `stats-results` directory, but it doesn't exist. The error occurs at line 55 in `aggregate-## Problem Analysis
+
+The job is failing because the `stats-aggregate` step in the workflow is trying to read from a `stats-results` directory that doesn't exist. The error occurs at line 55 in `aggregate-results.js`:
+
+```
+Error: ENOENT: no such file or directory, scandir '/home/runner/work/next.js/next.js/stats-results'
+```
+
+This happens because the upstream `stats` job failed for both bundlers (webpack and turbopack), so no artifacts were produced to download.
+
+## Root Cause
+
+Looking at the workflowresults.js`:
+
+```
+Error: ENOENT: no such file or directory, scandir '/home/runner/work/next.js/next.js/stats-results'
+```
+
+This happens because:
+
+1. The `stats` job (which runs the webpack/turbopack benchmarks) is **failing or not producing artifacts**
+2. When artifacts logs, `STATS_RESULT: failure` indicates the stats jobs failed. When the `stats` job fails:
+
+1. No `pr-stats-*.json` artifacts are created
+2. The `Download all stats artifacts` step (line 156-162 in the workflow) downloads with `pattern: pr-stats-*` into fail to download in the `Download all stats artifacts` step (line 156-162 in the workflow), the `stats-results` directory is never created
+3. The `Aggregate and post results` step then attempts to read a non-existent directory, causing the script to crash
+
+## Root Cause
+
+Looking at the environment variables in the logs:
+- `STATS the `stats-results` directory
+3. When no artifacts match the pattern, the `stats-results` directory is never created
+4. The aggregate script assumes the directory exists and tries to `scandir` it, causing the crash
+
+## Solution
+
+The `aggregate-results.js` script needs to handle the case where the `stats-results` directory doesn't exist. Add a directory existence check before attempting to read it:
+
+**File:** [`.github/actions_EXPECTED_BUNDLERS: webpack turbopack` (expects both bundlers)
+- `STATS_RESULT: failure` (indicates stats jobs failed)
+
+Since both bundler jobs failed, no `pr-stats-*.json` artifacts were created to download.
+
+## Solution
+
+The `aggregate-results.js` script needs to handle the case where the `stats-results` directory doesn't/next-stats-action/src/aggregate-results.js`](https://github.com/vercel/next.js/blob/0491db047b8f9c4a5f9d0285ad9ed514bb134873/.github/actions/next-stats-action/src/aggregate-results. exist. Modify the script to check if the directory exists before attempting to read it:
+
+**File:** `.github/actions/next-stats-action/src/aggregate-results.js`
+
+```javascript
+async function main() {
+  const resultsDir = process.argv[2] || process.cwd()
+
+  logger(`Aggregating results from: ${resultsDir}`)
+
+  // Check if thejs)
+
+**Change (lines 49-58):**
+
+```javascript
+async function main() {
+  const resultsDir = process.argv[2] || process.cwd()
+
+  logger(`Aggregating results from: ${resultsDir}`)
+
+  // Check if results directory exists; if not, treat as no artifacts
+  if (!existsSync(resultsDir)) {
+    logger(`Results directory does not exist: ${resultsDir}`)
+    const statsResult results directory exists
+  if (!existsSync(resultsDir)) {
+    logger(`Results directory does not exist: ${resultsDir}`)
+    
+    const statsResult = process.env.STATS_RESULT
+    const expectedBundlers = getExpectedBundlers()
+    
+    if (expectedBundlers.length > 0 && statsResult === 'failure') {
+      logger(
+        `No pr-stats-*.json files found - all bundler jobs ` +
+          `(${expectedBundlers.join(', ')}) failed`
+      )
+      await = process.env.STATS_RESULT
+    const expectedBundlers = getExpectedBundlers()
+    
+    if (expectedBundlers.length === 0 || statsResult !== 'failure') {
+      logger(
+        `No results directory (stats result: ${statsResult || 'unknown'}) - nothing to aggregate`
+      )
+      process.exit(0)
+    }
+
+    logger(
+      `No results directory - all bun addComment(
+        [],
+        { isRelease: false, commitId: null },
+        {},
+        { missingBundlers: expectedBundlers.map(getBundlerDisplayName) }
+      )
+    }
+    process.exit(0)
+  }
+
+  // Find all pr-stats-*.json files
+  const files = await fs.readdir(resultsDir)
+  // ... rest of the function
+```
+
+**Key changes:**
+- Add `existsSync(dler jobs ` +
+        `(${expectedBundlers.join(', ')}) failed`
+    )
+
+    await addComment(
+      [],
+      { isRelease: false, commitId: null },
+      {},
+      { missingBundlers: expectedBundlers.map(getBundlerDisplayName) }
+    )
+    process.exit(0)
+  }
+
+  // Find all pr-stats-*.json files
+  const files = await fs.readdir(resultsDir)
+  // ... rest of the function
+```resultsDir)` check before calling `fs.readdir()`
+- When the directory doesn't exist, handle it gracefully by checking the `STATS_RESULT` environment variable
+- If stats jobs genuinely failed, post the "all bundlers failed" notice
+- Exit cleanly with code 0 instead of crashing
+
+This allows the workflow to complete without error and properly report which bundlers failed, rather than crashing with an `ENOENT` error.
